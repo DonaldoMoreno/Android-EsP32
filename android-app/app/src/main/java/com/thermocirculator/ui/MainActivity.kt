@@ -167,6 +167,18 @@ class MainActivity : AppCompatActivity() {
                 viewModel.clearError()
             }
         }
+
+        viewModel.lastNfcEvent.observe(this) { event ->
+            if (event != null) {
+                binding.tvNfcUid.text = event.uid
+                Toast.makeText(
+                    this,
+                    getString(R.string.nfc_card_detected, event.uid),
+                    Toast.LENGTH_SHORT
+                ).show()
+                viewModel.clearNfcEvent()
+            }
+        }
     }
 
     private fun updateChart(history: List<TemperaturePoint>) {

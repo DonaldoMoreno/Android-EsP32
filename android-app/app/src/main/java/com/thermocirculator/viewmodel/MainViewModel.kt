@@ -10,6 +10,7 @@ import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
+import com.thermocirculator.model.NfcEvent
 import com.thermocirculator.model.SystemState
 import com.thermocirculator.model.TemperaturePoint
 import com.thermocirculator.model.ThermoState
@@ -52,6 +53,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application),
 
     private val _errorMessage = MutableLiveData<String?>(null)
     val errorMessage: LiveData<String?> = _errorMessage
+
+    private val _lastNfcEvent = MutableLiveData<NfcEvent?>(null)
+    val lastNfcEvent: LiveData<NfcEvent?> = _lastNfcEvent
 
     // ----------------------------------------------------------------------------------
     // Internal state
@@ -159,6 +163,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application),
                     _errorMessage.postValue("ESP32-S3 reporta ERROR. Verifique sensor y conexiones.")
                 }
             }
+            trimmed.startsWith("NFC UID ") -> {
+                val uid = trimmed.removePrefix("NFC UID ").trim()
+                if (uid.isNotEmpty()) {
+                    _lastNfcEvent.postValue(NfcEvent(uid, System.currentTimeMillis()))
+                }
+            }
             else -> Log.w(TAG, "Unknown message: $trimmed")
         }
     }
@@ -205,6 +215,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application),
 
     fun clearError() {
         _errorMessage.value = null
+    }
+
+    fun clearNfcEvent() {
+        _lastNfcEvent.value = null
     }
 
     // ----------------------------------------------------------------------------------

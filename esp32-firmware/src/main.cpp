@@ -15,6 +15,10 @@
  *  MAX31865 MISO → GPIO 13
  *  MAX31865 CLK  → GPIO 12
  *  SSR Gate      → GPIO 4
+ *  PN532 SDA     → GPIO 8
+ *  PN532 SCL     → GPIO 9
+ *  PN532 IRQ     → GPIO 5
+ *  PN532 RST     → GPIO 6
  *  USB D-        → GPIO 19 (native, no config needed for ESP32-S3)
  *  USB D+        → GPIO 20 (native)
  */
@@ -24,6 +28,8 @@
 #include <USBCDC.h>
 #include <Adafruit_MAX31865.h>
 #include <SPI.h>
+#include <Wire.h>
+#include <Adafruit_PN532.h>
 #include "PIDController.h"
 
 // ----------------------------------------------------------------------------------
@@ -50,6 +56,18 @@
 #ifndef COMMS_TIMEOUT_SEC
 #  define COMMS_TIMEOUT_SEC 10
 #endif
+#ifndef NFC_SDA_PIN
+#  define NFC_SDA_PIN       8
+#endif
+#ifndef NFC_SCL_PIN
+#  define NFC_SCL_PIN       9
+#endif
+#ifndef NFC_IRQ_PIN
+#  define NFC_IRQ_PIN       5
+#endif
+#ifndef NFC_RST_PIN
+#  define NFC_RST_PIN       6
+#endif
 
 // ----------------------------------------------------------------------------------
 // Constants
@@ -59,6 +77,8 @@ static constexpr float  PT100_NOMINAL          = 100.0f;   // Ω @ 0 °C
 static constexpr float  STABLE_TOLERANCE_DEG   = 1.5f;    // °C band for STABLE state
 static constexpr uint32_t READ_INTERVAL_MS     = 500;     // sensor polling interval
 static constexpr uint32_t REPORT_INTERVAL_MS   = 500;     // USB report interval
+static constexpr uint32_t NFC_POLL_INTERVAL_MS = 200;     // NFC card poll interval
+static constexpr uint32_t NFC_READ_TIMEOUT_MS  = 50;      // PN532 readPassive timeout (non-blocking)
 static constexpr uint32_t LINE_FREQ_HZ         = 50;      // mains frequency
 static constexpr uint32_t HALF_CYCLE_US        = 1000000UL / (LINE_FREQ_HZ * 2); // µs per half cycle
 
@@ -93,6 +113,7 @@ static const char* stateToStr(SystemState s) {
 USBCDC  SerialUSB;
 Adafruit_MAX31865 max31865(MAX31865_CS_PIN, MAX31865_MOSI_PIN, MAX31865_MISO_PIN, MAX31865_CLK_PIN);
 PIDController pid(PID_KP, PID_KI, PID_KD);
+Adafruit_PN532 nfc(NFC_IRQ_PIN, NFC_RST_PIN);
 
 // ----------------------------------------------------------------------------------
 // State variables
@@ -108,6 +129,7 @@ uint32_t    lastReadMs      = 0;
 uint32_t    lastReportMs    = 0;
 uint32_t    lastCommsMs     = 0;          // last time Android sent a command
 uint32_t    lastPIDMs       = 0;
+uint32_t    lastNfcPollMs   = 0;          // last NFC poll attempt
 
 // USB receive buffer
 static char rxBuffer[128];
@@ -121,6 +143,7 @@ void sendReport();
 void updateSSR();
 void enterError(const char* reason);
 float readTemperature(bool& sensorOk);
+void pollNfc();
 
 // ----------------------------------------------------------------------------------
 // Setup
@@ -136,6 +159,18 @@ void setup() {
 
     // MAX31865 – 2-wire PT100 (change MAX31865_2WIRE → 3WIRE / 4WIRE as needed)
     max31865.begin(MAX31865_2WIRE);
+
+    // PN532 NFC reader – I²C on custom pins
+    Wire.begin(NFC_SDA_PIN, NFC_SCL_PIN);
+    nfc.begin();
+    uint32_t versiondata = nfc.getFirmwareVersion();
+    if (!versiondata) {
+        // PN532 not found: report on USB but continue running without NFC
+        SerialUSB.println("NFC ERROR PN532 not found");
+    } else {
+        nfc.SAMConfig();
+        SerialUSB.println("NFC READY");
+    }
 
     pid.setOutputLimits(0.0f, 100.0f);
 
@@ -212,7 +247,13 @@ void loop() {
         updateSSR();
     }
 
-    // ---- 5. Periodic USB report ----
+    // ---- 5. NFC polling ----
+    if (now - lastNfcPollMs >= NFC_POLL_INTERVAL_MS) {
+        lastNfcPollMs = now;
+        pollNfc();
+    }
+
+    // ---- 6. Periodic USB report ----
     if (now - lastReportMs >= REPORT_INTERVAL_MS) {
         lastReportMs = now;
         sendReport();
@@ -272,6 +313,30 @@ void sendReport() {
     SerialUSB.println(buf);
 
     snprintf(buf, sizeof(buf), "STATE %s", stateToStr(systemState));
+    SerialUSB.println(buf);
+}
+
+// ----------------------------------------------------------------------------------
+// NFC polling – non-blocking card detection and UID reporting
+// ----------------------------------------------------------------------------------
+void pollNfc() {
+    uint8_t uid[7];
+    uint8_t uidLength = 0;
+
+    bool found = nfc.readPassiveTargetID(
+        PN532_MIFARE_ISO14443A, uid, &uidLength, (uint16_t)NFC_READ_TIMEOUT_MS);
+
+    if (!found || uidLength == 0) {
+        return;
+    }
+
+    // Build hex UID string and send over USB CDC
+    // Format: "NFC UID AABBCCDD\n"
+    char buf[32];
+    int  offset = snprintf(buf, sizeof(buf), "NFC UID ");
+    for (uint8_t i = 0; i < uidLength && offset < (int)(sizeof(buf) - 3); i++) {
+        offset += snprintf(buf + offset, sizeof(buf) - offset, "%02X", uid[i]);
+    }
     SerialUSB.println(buf);
 }
 

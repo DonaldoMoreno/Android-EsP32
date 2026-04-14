@@ -11,4 +11,8 @@
     <string name="usb_permission_msg">¿Permitir que ThermoCirculator acceda al dispositivo USB?</string>
     <string name="error_no_usb">No hay conexión USB. Conecte el ESP32-S3.</string>
     <string name="error_invalid_temp">Ingrese una temperatura válida (0–200 °C)</string>
+    <string name="label_nfc">NFC</string>
+    <string name="label_nfc_uid">Último UID:</string>
+    <string name="nfc_waiting">— en espera —</string>
+    <string name="nfc_card_detected">Tarjeta NFC detectada: %s</string>
 </resources>
