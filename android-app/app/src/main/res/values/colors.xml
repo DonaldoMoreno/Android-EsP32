@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Background colors -->
+    <color name="background_dark">#121212</color>
+    <color name="surface_dark">#1E1E1E</color>
+
+    <!-- Text colors -->
+    <color name="text_primary">#FFFFFF</color>
+    <color name="text_secondary">#B0B0B0</color>
+
+    <!-- Accent colors -->
+    <color name="accent_orange">#FF6D3B</color>
+    <color name="accent_blue">#42A5F5</color>
+    <color name="accent_green">#388E3C</color>
+    <color name="accent_red">#D32F2F</color>
+
+    <!-- Chart colors -->
+    <color name="chart_temp_line">#FF6D3B</color>
+    <color name="chart_setpoint_line">#42A5F5</color>
+    <color name="chart_grid">#333333</color>
+</resources>

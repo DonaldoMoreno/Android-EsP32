@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">ThermoCirculator</string>
+    <string name="btn_start">▶ START</string>
+    <string name="btn_stop">⏹ STOP</string>
+    <string name="label_current_temp">Temperatura Actual</string>
+    <string name="label_power">Potencia</string>
+    <string name="label_state">Estado</string>
+    <string name="label_target_temp">Temperatura Objetivo (°C)</string>
+    <string name="usb_permission_title">Permiso USB</string>
+    <string name="usb_permission_msg">¿Permitir que ThermoCirculator acceda al dispositivo USB?</string>
+    <string name="error_no_usb">No hay conexión USB. Conecte el ESP32-S3.</string>
+    <string name="error_invalid_temp">Ingrese una temperatura válida (0–200 °C)</string>
+</resources>

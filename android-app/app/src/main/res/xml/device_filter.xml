@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    USB device filter for ESP32-S3 in CDC mode.
+    VID 0x303A is Espressif's Vendor ID for ESP32-S3 native USB.
+-->
+<resources>
+    <!-- ESP32-S3 Native USB (Espressif) -->
+    <usb-device vendor-id="0x303A" product-id="0x1001" class="0x02" />
+    <!-- CP210x USB-UART bridge (common USB-serial adapters) -->
+    <usb-device vendor-id="0x10C4" product-id="0xEA60" />
+    <!-- CH340/CH341 USB-UART bridge -->
+    <usb-device vendor-id="0x1A86" product-id="0x7523" />
+    <!-- FTDI FT232 -->
+    <usb-device vendor-id="0x0403" product-id="0x6001" />
+</resources>
