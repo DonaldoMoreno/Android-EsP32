@@ -47,6 +47,17 @@ enum class SystemState {
 }
 
 /**
+ * Represents an NFC card detection event received from the ESP32-S3.
+ *
+ * @param uid Hexadecimal UID string of the detected NFC card (e.g. "04A3B2C1").
+ * @param timestamp Unix timestamp in milliseconds when the event was received.
+ */
+data class NfcEvent(
+    val uid: String,
+    val timestamp: Long
+)
+
+/**
  * Connection status of the USB serial device.
  */
 enum class UsbConnectionState {
